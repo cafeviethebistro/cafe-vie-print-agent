@@ -1,0 +1,75 @@
+{
+  "name": "cafe-vie-print-agent",
+  "version": "1.0.0",
+  "description": "Café Vie Local Print Agent — desktop installer",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run build:watch\" \"sleep 3 && electron .\"",
+    "icons": "node scripts/create-icons.mjs",
+    "build": "npm run icons && node build.mjs",
+    "build:watch": "node build.mjs --watch",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:all": "npm run build && electron-builder --win --mac"
+  },
+  "dependencies": {
+    "electron-store": "^10.0.1",
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "concurrently": "^9.1.2",
+    "electron": "^35.2.0",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.4",
+    "typescript": "^5.8.3"
+  },
+  "build": {
+    "appId": "com.cafevie.printagent",
+    "productName": "Café Vie Print Agent",
+    "copyright": "Copyright © 2026 Café Vie",
+    "files": [
+      "dist/**/*",
+      "renderer/**/*",
+      "assets/**/*"
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "cafeviethebistro",
+      "repo": "cafe-vie-print-agent"
+    },
+    "icon": "assets/icon.png",
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "artifactName": "CafeVie-Print-Agent-Setup-${version}.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Café Vie Print Agent",
+      "runAfterFinish": true
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "category": "public.app-category.utilities",
+      "artifactName": "CafeVie-Print-Agent-${version}.dmg",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "title": "Café Vie Print Agent",
+      "background": null,
+      "window": { "width": 540, "height": 380 }
+    },
+    "linux": {
+      "target": "AppImage",
+      "artifactName": "CafeVie-Print-Agent-${version}.AppImage"
+    }
+  }
+}

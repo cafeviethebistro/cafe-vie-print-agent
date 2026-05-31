@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Café Vie Print Agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:    #B7472A;
+      --primary-dk: #8f3520;
+      --bg:         #faf8f5;
+      --card:       #ffffff;
+      --border:     #e8e0d5;
+      --text:       #2c2013;
+      --muted:      #7a6955;
+      --green:      #16a34a;
+      --amber:      #d97706;
+      --red:        #dc2626;
+      --radius:     10px;
+    }
+
+    body {
+      font-family: "DM Sans", system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────── */
+    header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card);
+      flex-shrink: 0;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: white; font-weight: 700;
+    }
+    .brand-name { font-weight: 700; font-size: 14px; line-height: 1.2; }
+    .brand-sub  { font-size: 11px; color: var(--muted); }
+    .header-actions { display: flex; gap: 6px; }
+
+    /* ── Status badge ──────────────────────────────────────────────────── */
+    .status-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      flex-shrink: 0;
+    }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .status-pill.connected    { background: #dcfce7; color: #15803d; }
+    .status-pill.connected .status-dot    { background: var(--green); }
+    .status-pill.connecting   { background: #fef9c3; color: #92400e; }
+    .status-pill.connecting .status-dot   { background: var(--amber); animation: pulse 1s infinite; }
+    .status-pill.auth_error   { background: #fee2e2; color: #991b1b; }
+    .status-pill.auth_error .status-dot   { background: var(--red); }
+    .status-pill.disconnected { background: #f3f4f6; color: #374151; }
+    .status-pill.disconnected .status-dot { background: #9ca3af; }
+    .status-pill.setup        { background: #eff6ff; color: #1d4ed8; }
+    .status-pill.setup .status-dot        { background: #3b82f6; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+
+    .status-error { font-size: 11px; color: var(--red); max-width: 220px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Scrollable body ───────────────────────────────────────────────── */
+    .body { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Setup screen ──────────────────────────────────────────────────── */
+    #setup-screen {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      display: none; flex-direction: column; gap: 14px;
+    }
+    #setup-screen.visible { display: flex; }
+    .setup-title { font-size: 15px; font-weight: 700; }
+    .setup-desc  { color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+    /* ── Stats grid ────────────────────────────────────────────────────── */
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 14px;
+    }
+    .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 4px; }
+    .stat-value { font-size: 22px; font-weight: 700; line-height: 1; }
+    .stat-sub   { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+    /* ── Action buttons ────────────────────────────────────────────────── */
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    btn, .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 13px; border-radius: 7px; font-size: 12px;
+      font-weight: 600; cursor: pointer; border: 1px solid transparent;
+      transition: opacity .15s;
+    }
+    .btn:active { opacity: .75; }
+    .btn-primary  { background: var(--primary); color: white; }
+    .btn-primary:hover  { background: var(--primary-dk); }
+    .btn-outline  { background: var(--card); border-color: var(--border); color: var(--text); }
+    .btn-outline:hover  { background: #f5f0ea; }
+    .btn-ghost    { background: transparent; color: var(--muted); }
+    .btn-ghost:hover    { color: var(--text); background: #f0ebe3; }
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .btn[disabled] { opacity: .4; cursor: default; pointer-events: none; }
+
+    /* ── Log viewer ────────────────────────────────────────────────────── */
+    .log-panel {
+      background: #1a1a1a; border-radius: var(--radius);
+      flex: 1; display: flex; flex-direction: column;
+      min-height: 180px; overflow: hidden;
+    }
+    .log-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .log-title { font-size: 11px; font-weight: 600; color: #aaa; letter-spacing: .04em; }
+    .log-body  {
+      flex: 1; overflow-y: auto; padding: 8px 12px;
+      font-family: "SF Mono", Consolas, "Courier New", monospace;
+      font-size: 11px; line-height: 1.7; color: #ccc;
+    }
+    .log-body::-webkit-scrollbar { width: 4px; }
+    .log-body::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+    .log-entry { white-space: pre-wrap; word-break: break-all; }
+    .log-entry.info  { color: #d4d4d4; }
+    .log-entry.warn  { color: #fbbf24; }
+    .log-entry.error { color: #f87171; }
+    .log-ts { color: #555; margin-right: 6px; }
+    .log-empty { color: #444; font-style: italic; }
+
+    /* ── Settings panel ────────────────────────────────────────────────── */
+    #settings-panel {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px;
+      display: none; flex-direction: column; gap: 14px;
+    }
+    #settings-panel.visible { display: flex; }
+    .settings-title { font-size: 14px; font-weight: 700; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--muted); }
+    .field input {
+      padding: 7px 10px; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 12px; background: var(--bg);
+      color: var(--text); outline: none;
+      -webkit-user-select: text; user-select: text;
+    }
+    .field input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px #b7472a22; }
+    .field-row { display: flex; gap: 10px; align-items: center; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+    .toggle { position: relative; width: 36px; height: 20px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: #ddd; border-radius: 20px; cursor: pointer; transition: background .2s;
+    }
+    .toggle-track::after {
+      content: ""; position: absolute;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: white; top: 3px; left: 3px; transition: left .2s;
+    }
+    input:checked + .toggle-track { background: var(--primary); }
+    input:checked + .toggle-track::after { left: 19px; }
+    .settings-footer { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* ── Update banner ─────────────────────────────────────────────────── */
+    #update-banner {
+      display: none; align-items: center; justify-content: space-between;
+      padding: 9px 14px; background: #1d4ed8; color: white;
+      border-radius: var(--radius); font-size: 12px;
+    }
+    #update-banner.visible { display: flex; }
+
+    /* ── Divider ───────────────────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 0 -18px; }
+
+    /* ── Heartbeat time ────────────────────────────────────────────────── */
+    .heartbeat-ts { font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ───────────────────────────────────────────────────────────── -->
+<header>
+  <div class="brand">
+    <div class="brand-icon">CV</div>
+    <div>
+      <div class="brand-name">Café Vie Print Agent</div>
+      <div class="brand-sub">v<span id="app-ver">1.0.0</span></div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-ghost btn-sm" id="btn-back-office" title="Open Back Office">↗ Back Office</button>
+    <button class="btn btn-ghost btn-sm" id="btn-settings" title="Settings">⚙ Settings</button>
+  </div>
+</header>
+
+<!-- ── Status bar ────────────────────────────────────────────────────────── -->
+<div class="status-bar">
+  <span class="status-pill disconnected" id="status-pill">
+    <span class="status-dot"></span>
+    <span id="status-label">Disconnected</span>
+  </span>
+  <span class="status-error" id="status-error"></span>
+</div>
+
+<!-- ── Update banner ─────────────────────────────────────────────────────── -->
+<div id="update-banner">
+  <span>🎉 Update downloaded — restart to apply</span>
+  <button class="btn btn-sm" style="background:white;color:#1d4ed8" onclick="location.reload()">Restart Now</button>
+</div>
+
+<!-- ── Body ──────────────────────────────────────────────────────────────── -->
+<div class="body" id="body">
+
+  <!-- First-run setup screen -->
+  <div id="setup-screen">
+    <div class="setup-title">👋 Welcome — let's connect your printer</div>
+    <div class="setup-desc">
+      Enter your Café Vie API URL and agent token below.<br>
+      You can find the token in <strong>Settings → Printers → Print Agent</strong>.
+    </div>
+    <div class="field">
+      <label>API URL</label>
+      <input type="url" id="setup-url" placeholder="https://your-app.replit.app">
+    </div>
+    <div class="field">
+      <label>Agent Token</label>
+      <input type="password" id="setup-token" placeholder="Paste token from Back Office">
+    </div>
+    <button class="btn btn-primary" id="btn-setup-save">Connect →</button>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="stats" id="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Jobs Today</div>
+      <div class="stat-value" id="stat-today">0</div>
+      <div class="stat-sub">delivered</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Jobs</div>
+      <div class="stat-value" id="stat-total">0</div>
+      <div class="stat-sub">all time</div>
+    </div>
+    <div class="stat-card" style="grid-column:span 2">
+      <div class="stat-label">Last Heartbeat</div>
+      <div class="heartbeat-ts" id="stat-heartbeat">—</div>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="actions">
+    <button class="btn btn-primary" id="btn-test">🖨 Test Printer</button>
+    <button class="btn btn-outline" id="btn-reconnect">↺ Reconnect</button>
+    <button class="btn btn-ghost btn-sm" id="btn-updates">Check for updates</button>
+  </div>
+
+  <!-- Settings panel -->
+  <div id="settings-panel">
+    <div class="settings-title">Settings</div>
+
+    <div class="field">
+      <label>API URL</label>
+      <input type="url" id="s-url" placeholder="https://your-app.replit.app">
+    </div>
+    <div class="field">
+      <label>Agent Token</label>
+      <input type="password" id="s-token" placeholder="••••••••••••••••">
+    </div>
+    <div class="field">
+      <label>Poll Interval (ms)</label>
+      <input type="number" id="s-poll" min="1000" max="60000" step="500">
+    </div>
+    <div class="toggle-row">
+      <label style="font-size:12px;font-weight:600">Launch at Login</label>
+      <label class="toggle">
+        <input type="checkbox" id="s-startup">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div class="settings-footer">
+      <button class="btn btn-ghost btn-sm" id="btn-settings-cancel">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="btn-settings-save">Save &amp; Reconnect</button>
+    </div>
+  </div>
+
+  <!-- Log viewer -->
+  <div class="log-panel">
+    <div class="log-header">
+      <span class="log-title">AGENT LOG</span>
+      <button class="btn btn-ghost btn-sm" id="btn-clear-log" style="color:#666;padding:2px 8px">Clear</button>
+    </div>
+    <div class="log-body" id="log-body">
+      <div class="log-entry log-empty">Waiting for agent…</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const api = window.agent;
+
+const STATUS_LABELS = {
+  setup:        'Setup required',
+  connecting:   'Connecting…',
+  connected:    'Connected',
+  auth_error:   'Auth error',
+  disconnected: 'Disconnected',
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let autoScroll = true;
+
+function applyState(s) {
+  // Status pill
+  const pill = $('status-pill');
+  pill.className = `status-pill ${s.status}`;
+  $('status-label').textContent = STATUS_LABELS[s.status] ?? s.status;
+  $('status-error').textContent = (s.status !== 'connected' && s.lastError) ? s.lastError : '';
+
+  // Stats
+  $('stat-today').textContent   = s.jobsToday;
+  $('stat-total').textContent   = s.jobsTotal;
+  $('stat-heartbeat').textContent = s.lastHeartbeatAt
+    ? new Date(s.lastHeartbeatAt).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' })
+    : '—';
+
+  // Setup screen vs normal UI
+  const isSetup = s.status === 'setup';
+  $('setup-screen').classList.toggle('visible', isSetup);
+  $('stats-grid').style.display   = isSetup ? 'none' : '';
+  $('btn-test').disabled          = s.status !== 'connected';
+  $('btn-reconnect').style.display = isSetup ? 'none' : '';
+}
+
+// ── Log rendering ─────────────────────────────────────────────────────────────
+function formatTs(iso) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function appendLogEntry(e) {
+  const logBody = $('log-body');
+  // Remove placeholder
+  const placeholder = logBody.querySelector('.log-empty');
+  if (placeholder) placeholder.remove();
+
+  const el = document.createElement('div');
+  el.className = `log-entry ${e.level}`;
+  el.innerHTML = `<span class="log-ts">${formatTs(e.ts)}</span>${escapeHtml(e.msg)}`;
+  logBody.appendChild(el);
+
+  if (autoScroll) logBody.scrollTop = logBody.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Settings panel ────────────────────────────────────────────────────────────
+function openSettings(settings) {
+  $('s-url').value     = settings.apiUrl;
+  $('s-token').value   = settings.agentToken;
+  $('s-poll').value    = settings.pollIntervalMs;
+  $('s-startup').checked = settings.launchAtStartup;
+  $('settings-panel').classList.add('visible');
+}
+
+function closeSettings() {
+  $('settings-panel').classList.remove('visible');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  // Hydrate initial state + logs
+  const [state, logs] = await Promise.all([api.getState(), api.getLogs()]);
+  applyState(state);
+  logs.forEach(appendLogEntry);
+
+  // Pre-fill setup screen from settings if available
+  const settings = await api.getSettings();
+  if (settings.apiUrl)   $('setup-url').value   = settings.apiUrl;
+  if (settings.agentToken) $('setup-token').value = settings.agentToken;
+
+  // Push listeners
+  api.onState(applyState);
+  api.onLog(appendLogEntry);
+  api.onUpdateReady(() => $('update-banner').classList.add('visible'));
+  api.onUpdateAvail(() => {
+    const e = { ts: new Date().toISOString(), level:'info', msg:'Update available — downloading…' };
+    appendLogEntry(e);
+  });
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+$('btn-test').addEventListener('click', () => api.testPrint());
+$('btn-reconnect').addEventListener('click', () => api.restartAgent());
+$('btn-updates').addEventListener('click', () => api.checkUpdates());
+$('btn-back-office').addEventListener('click', () => api.openBackOffice());
+
+$('btn-settings').addEventListener('click', async () => {
+  const s = await api.getSettings();
+  openSettings(s);
+});
+$('btn-settings-cancel').addEventListener('click', closeSettings);
+$('btn-settings-save').addEventListener('click', async () => {
+  await api.saveSettings({
+    apiUrl:          $('s-url').value.trim(),
+    agentToken:      $('s-token').value.trim(),
+    pollIntervalMs:  parseInt($('s-poll').value, 10) || 3000,
+    launchAtStartup: $('s-startup').checked,
+  });
+  closeSettings();
+});
+
+$('btn-setup-save').addEventListener('click', async () => {
+  const url   = $('setup-url').value.trim();
+  const token = $('setup-token').value.trim();
+  if (!url || !token) { alert('Both API URL and token are required.'); return; }
+  await api.saveSettings({ apiUrl: url, agentToken: token });
+});
+
+$('btn-clear-log').addEventListener('click', () => {
+  $('log-body').innerHTML = '<div class="log-entry log-empty">Log cleared</div>';
+});
+
+// Auto-scroll: pause if user scrolls up
+$('log-body').addEventListener('scroll', (e) => {
+  const el = e.target;
+  autoScroll = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+});
+
+init();
+</script>
+</body>
+</html>
