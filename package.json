@@ -54,7 +54,7 @@
       "runAfterFinish": true
     },
     "mac": {
-      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "target": [{ "target": "dmg", "arch": ["arm64"] }],
       "category": "public.app-category.utilities",
       "artifactName": "CafeVie-Print-Agent-${version}.dmg",
       "hardenedRuntime": true,
