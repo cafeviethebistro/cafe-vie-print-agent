@@ -53,16 +53,15 @@
       "shortcutName": "Café Vie Print Agent",
       "runAfterFinish": true
     },
-"mac": {
-  "target": [
-    { "target": "dmg", "arch": ["x64"] },
-    { "target": "dmg", "arch": ["arm64"] }
-  ],
-  "category": "public.app-category.utilities",
-  "artifactName": "CafeVie-Print-Agent-${version}-${arch}.dmg",
-  "hardenedRuntime": false,
-  "gatekeeperAssess": false
-},
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64"] },
+        { "target": "dmg", "arch": ["arm64"] }
+      ],
+      "category": "public.app-category.utilities",
+      "artifactName": "CafeVie-Print-Agent-${version}-${arch}.dmg",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "dmg": {
       "title": "Café Vie Print Agent",
